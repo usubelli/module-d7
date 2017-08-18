@@ -1,0 +1,112 @@
+<?php
+
+function ajax_menu()
+{
+  $items['nos_offres'] = array(
+    'page callback' => 'nos_offres',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  $items['nos-offres/%'] = array(
+    'page callback' => 'offre',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+function offre()
+{
+  return theme('offre_template', array('offre' => FALSE, 'post' => $_POST, 'get' => $_GET));
+}
+
+/*
+ * Implement hook_theme().
+ */
+function ajax_theme($existing, $type, $theme, $path)
+{
+  return array(
+    'offre_template' => array(
+      'template' => 'offre',
+      'path' => drupal_get_path('module', 'ajax') . '/templates',
+    ),
+  );
+}
+
+
+
+
+function nos_offres()
+{
+  $flux = simplexml_load_file("http://puissancecap.intuition-web.com");
+  $offres = $flux->channel->item;
+  
+
+  $html=""; 
+  $index = 0;
+  // var_dump($offres);
+
+  foreach($offres AS $key => $offre) { 
+
+
+    if ($_POST['front']){
+    
+      $html .= '<li class="col-xs-12 col-sm-6 col-md-4 col-lg-3 offre">'; 
+         $html .= '<p class="size-4 color-light-purple bold">'. $offre->title .'</p>'; 
+ 
+         $html .= '<a class="size-7 bold color-pink link-arrow" href="/nos-offres/'. $offre->reference . '">Découvrir l\'offre</a>'; 
+      $html .= '</li>'; 
+
+      if ($index == 8) break;      
+
+    } else {
+
+      if(isset($_POST['idx'])){
+
+        if(substr($offre->reference, 0, 3) == $_POST['idx'] ) {
+
+          $date = date_create_from_format('D, d M Y H:i:s O', $offre->pubDate);
+
+          $html .= '<tr class="odd views-row-first" data-type="'.  substr($offre->reference, 0, 3) .'"  >'; 
+            $html .= '<td class="views-field views-field-title">'; 
+                $html .= '<a href="/nos-offres/'. $offre->reference . '">'. $offre->title .'</a> ';         
+            $html .= '</td>'; 
+            $html .= '<td class="views-field views-field-field-date">'; 
+                $html .= '<span class="date-display-single">'. $date->format('d/m/Y') .'</span>';           
+            $html .= '</td>'; 
+            $html .= '<td class="views-field views-field-field-type-de-contrat">'. $offre->contract_type .'</td>'; 
+            $html .= '<td class="views-field views-field-field-ville-offre">'. $offre->location .'</td>'; 
+            $html .= '<td class="views-field views-field-view-node">'; 
+                $html .= '<a href="/nos-offres/'. $offre->reference . '">Voir l\'offre</a>';           
+            $html .= '</td>'; 
+          $html .= '</tr>'; 
+          
+        }
+      
+      } else {
+
+         $date = date_create_from_format('D, d M Y H:i:s O', $offre->pubDate);
+
+        $html .= '<tr class="odd views-row-first" data-type="'.  substr($offre->reference, 0, 3) .'"  >'; 
+          $html .= '<td class="views-field views-field-title">'; 
+              $html .= '<a href="/nos-offres/'. $offre->reference . '">'. $offre->title .'</a> ';         
+          $html .= '</td>'; 
+          $html .= '<td class="views-field views-field-field-date">'; 
+              $html .= '<span class="date-display-single">'. $date->format('d/m/Y') .'</span>';           
+          $html .= '</td>'; 
+          $html .= '<td class="views-field views-field-field-type-de-contrat">'. $offre->contract_type .'</td>'; 
+          $html .= '<td class="views-field views-field-field-ville-offre">'. $offre->location .'</td>'; 
+          $html .= '<td class="views-field views-field-view-node">'; 
+              $html .= '<a href="/nos-offres/'. $offre->reference . '">Voir l\'offre</a>';           
+          $html .= '</td>'; 
+        $html .= '</tr>'; 
+      }
+    }
+    $index++;  
+  }
+
+  
+  drupal_json_output(array("return"=>$html, "index"=>$index));
+  drupal_exit();
+  // echo json_encode([true]);
+}
